@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script type="x-shader/x-vertex" id="vshader">
+      attribute vec4 aPosition;
+      uniform mat4 uTransformationMatrix;
+      
+      void main() {
+
+        gl_Position = uTransformationMatrix * aPosition;
+        gl_PointSize = 10.0;
+      }
+    </script>
+    
+    <script type="x-shader/x-fragment" id="fshader">
+      precision mediump float;
+      uniform vec4 uColor;		
+      void main() {
+      gl_FragColor = uColor;
+      }
+    </script>
+    
+    <!--Import external javascript file-->
+    <!--Helper javascript methods for initializing webgl-->
+    <script src="./lib/webgl-init.js"></script>
+    <script src="./lib/webgl-utils.js"></script>
+    <script src="./lib/webgl-debug.js"></script>
+    <script src="./lib/gl-matrix-min.js"></script>
+    
+    
+    <script>
+      function drawAxis(gl,uTransformationMatrixPointer,aPositionPointer,uFragColorPointer) {
+        var transformationMatrix = mat4.create();
+        gl.uniformMatrix4fv(uTransformationMatrixPointer,false,new Float32Array(transformationMatrix));
+      
+        var lines = [
+         0.0, 1.0,0.0,1.0,
+         0.0,-1.0,0.0,1.0,
+         1.0, 0.0,0.0,1.0,
+        -1.0, 0.0,0.0,1.0
+        ];
+        var linebuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER,linebuffer);
+        gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(lines),gl.STATIC_DRAW);
+        
+        
+        gl.vertexAttribPointer(aPositionPointer,4,gl.FLOAT,false,0,0);
+        gl.uniform4f(uFragColorPointer,0.0,1.0,0.0,1.0);
+        gl.drawArrays(gl.LINES,0,2);
+        gl.uniform4f(uFragColorPointer,1.0,0.0,0.0,1.0);
+        gl.drawArrays(gl.LINES,2,2);
+			
+      }
+    
+      function main() {
+        //Retrieve <canvas> element
+        var canvas = document.getElementById("main_canvas");
+        var button1 = document.getElementById("button1");
+        var button2 = document.getElementById("button2");
+        var button3 = document.getElementById("button3");
+        if(!canvas) {
+          console.log("Failed to retrieve the <canvas> element");
+        }
+        
+        //Get the rendering context (WebGL)
+        var gl = initializeWebGL(canvas,true);
+        //initialize shaders program
+        var vertexShader = initializeShader(gl,"vshader");
+        var fragmentShader = initializeShader(gl, "fshader");
+        var program = initializeProgram(gl,vertexShader,fragmentShader);
+        gl.useProgram(program);
+
+        var aPositionPointer = gl.getAttribLocation(program,"aPosition");
+        gl.enableVertexAttribArray(aPositionPointer);
+        var uTransformationMatrixPointer = gl.getUniformLocation(program,"uTransformationMatrix");
+        
+        var uFragColorPointer = gl.getUniformLocation(program,"uColor");
+        
+        gl.clearColor(0.0,0.0,0.0,1.0);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+        
+        
+        
+        var vertices = 
+        [0.1-0.05,0.1,0.0,1.5, //right triangle
+         0.9-0.05,0.1,0.0,1.5,
+         0.5-0.05,0.8,0.0,1.5,
+
+         0.1-0.5,0.1-0.85,0.0,1.5, //bottom triangle
+         0.9-0.5,0.1-0.85,0.0,1.5,
+         0.5-0.5,0.8-0.85,0.0,1.5,
+
+         0.1-0.95,0.1,0.0,1.5, //left triangle
+         0.9-0.95,0.1,0.0,1.5,
+         0.5-0.95,0.8,0.0,1.5,
+
+         ];
+        
+               
+        var vertexBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER,vertexBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(vertices),gl.STATIC_DRAW);
+        gl.vertexAttribPointer(aPositionPointer,4,gl.FLOAT,false,0,0);
+        gl.uniform4f(uFragColorPointer,0.0,1.0,0.0,1.0);
+        gl.drawArrays(gl.TRIANGLES,0,3);
+        
+        var transformationMatrix = mat4.create();
+        
+        var right_angleOfRotation = -60;
+        var right_toRadians = glMatrix.toRadian(right_angleOfRotation);
+
+        var left_angleOfRotation = 60;
+        var left_toRadians = glMatrix.toRadian(left_angleOfRotation);
+
+        var bottom_angleOfRotation = 180;
+        var bottom_toRadians = glMatrix.toRadian(bottom_angleOfRotation);
+
+        var prev = Date.now();
+        var delay = 999999;
+        button1.onclick = function(event){
+          var i;
+          delay = 5;
+          
+          
+        }
+
+        button2.onclick = function(event){
+          delay = 3;
+        }
+
+        button3.onclick = function(event){
+          delay = 1;
+        }
+
+        
+
+        var animate = function() {
+          gl.clearColor(0.0,0.0,0.0,1.0);
+          gl.clear(gl.COLOR_BUFFER_BIT);
+          drawAxis(gl,uTransformationMatrixPointer,aPositionPointer,uFragColorPointer);
+          
+          //START DRAW
+          mat4.identity(transformationMatrix);
+          mat4.rotateZ(transformationMatrix,transformationMatrix,right_angleOfRotation);
+          gl.uniformMatrix4fv(uTransformationMatrixPointer,false,transformationMatrix);
+          gl.bindBuffer(gl.ARRAY_BUFFER,vertexBuffer);
+          gl.vertexAttribPointer(aPositionPointer,4,gl.FLOAT,false,0,0);
+          gl.drawArrays(gl.TRIANGLES,0,3);
+          gl.drawArrays(gl.TRIANGLES,3,3);
+          gl.drawArrays(gl.TRIANGLES,6,3);
+          //END DRAW
+
+          //Right Circle
+          var tempX, tempY;
+          var right_circle_vertices = [0.65/1.5,0.45/1.5,0.0];
+          var rad = 0.806
+          for(var i=0;i<=180;i++) {
+            var radian = i/180.0 * Math.PI;
+            tempX = ((((rad*Math.cos(radian))) * Math.cos(right_toRadians)) - (((rad*Math.sin(radian))) * Math.sin(right_toRadians)) + 0.65)/1.5 //translate by 0.65, scale by 1.5
+            tempY = ((((rad*Math.cos(radian))) * Math.sin(right_toRadians)) + (((rad*Math.sin(radian))) * Math.cos(right_toRadians)) + 0.45)/1.5 //translate by 0.45, scale by 1.5
+            right_circle_vertices.push(tempX);
+            right_circle_vertices.push(tempY);   
+            right_circle_vertices.push(1.99);
+          }
+
+         
+          //Buffer object definition
+          var rightCircle_vertices_vertexBuffer = gl.createBuffer();
+          gl.bindBuffer(gl.ARRAY_BUFFER,rightCircle_vertices_vertexBuffer);
+          gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(right_circle_vertices),gl.STATIC_DRAW);
+          gl.vertexAttribPointer(aPositionPointer,3,gl.FLOAT,false,0,0);
+          gl.enableVertexAttribArray(aPositionPointer);
+          //Draw upper half
+          gl.uniform4f(uFragColorPointer,1.0,0.0,0.0,1.0);
+          gl.drawArrays(gl.TRIANGLE_FAN,0,right_circle_vertices.length/3);
+          /**END RIGHT CIRCLE**/
+
+          //Left Circle
+          var tempX, tempY;
+          var left_circle_vertices = [-0.65/1.5,0.45/1.5,0.0];
+          var rad = 0.806
+          for(var i=0;i<=180;i++) {
+            var radian = i/180.0 * Math.PI;
+            tempX = ((((rad*Math.cos(radian))) * Math.cos(left_toRadians)) - (((rad*Math.sin(radian))) * Math.sin(left_toRadians)) - 0.65)/1.5 //translate by 0.65, scale by 1.5
+            tempY = ((((rad*Math.cos(radian))) * Math.sin(left_toRadians)) + (((rad*Math.sin(radian))) * Math.cos(left_toRadians)) + 0.45)/1.5 //translate by 0.45, scale by 1.5
+            left_circle_vertices.push(tempX);
+            left_circle_vertices.push(tempY);   
+            left_circle_vertices.push(1.99);
+          }
+
+         
+          //Buffer object definition
+          var leftCircle_vertices_vertexBuffer = gl.createBuffer();
+          gl.bindBuffer(gl.ARRAY_BUFFER,leftCircle_vertices_vertexBuffer);
+          gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(left_circle_vertices),gl.STATIC_DRAW);
+          gl.vertexAttribPointer(aPositionPointer,3,gl.FLOAT,false,0,0);
+          gl.enableVertexAttribArray(aPositionPointer);
+          //Draw upper half
+          gl.uniform4f(uFragColorPointer,1.0,0.0,0.0,1.0);
+          gl.drawArrays(gl.TRIANGLE_FAN,0,left_circle_vertices.length/3);
+          /*END LEFT CIRCLE*/
+
+          //Bottom Circle
+          var tempX, tempY;
+          var left_circle_vertices = [0,-0.75/1.5,0.0];
+          var rad = 0.806
+          for(var i=0;i<=180;i++) {
+            var radian = i/180.0 * Math.PI;
+            tempX = ((((rad*Math.cos(radian))) * Math.cos(bottom_toRadians)) - (((rad*Math.sin(radian))) * Math.sin(bottom_toRadians)))/1.5 //scale by 1.5
+            tempY = ((((rad*Math.cos(radian))) * Math.sin(bottom_toRadians)) + (((rad*Math.sin(radian))) * Math.cos(bottom_toRadians)) - 0.75)/1.5 //translate by 0.45, scale by 1.5
+            left_circle_vertices.push(tempX);
+            left_circle_vertices.push(tempY);   
+            left_circle_vertices.push(1.99);
+          }
+
+         
+          //Buffer object definition
+          var leftCircle_vertices_vertexBuffer = gl.createBuffer();
+          gl.bindBuffer(gl.ARRAY_BUFFER,leftCircle_vertices_vertexBuffer);
+          gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(left_circle_vertices),gl.STATIC_DRAW);
+          gl.vertexAttribPointer(aPositionPointer,3,gl.FLOAT,false,0,0);
+          gl.enableVertexAttribArray(aPositionPointer);
+          //Draw upper half
+          gl.uniform4f(uFragColorPointer,1.0,0.0,0.0,1.0);
+          gl.drawArrays(gl.TRIANGLE_FAN,0,left_circle_vertices.length/3);
+          /*END LEFT CIRCLE*/
+
+          //START UPDATE
+          var current = Date.now();
+          var elapsed = current - prev;
+          prev = current;
+
+          right_angleOfRotation+= 10 * (elapsed/ (delay * 1000));
+          right_angleOfRotation%=360;
+          //END UPDATE
+
+          //call function animate again
+          requestAnimFrame(animate);
+		  }
+        //start animation
+        animate();
+	}
+    </script>
+</head>
+
+  <body onload="main()">
+    <canvas id="main_canvas" width="400" height="400" style="border: 1px black solid; ">
+
+    </canvas>
+    <button id = "button1">1</button>
+    <button id = "button2">2</button>
+    <button id = "button3">3</button>
+  </body>
+</html>
